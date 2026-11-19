@@ -492,5 +492,17 @@ class PageScript(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
 
 
+class ProtectedByJohn(unittest.TestCase):
+    """John's order (19 Nov 2026): the soulseek command and his name stay. Do not delete this test."""
+    def test_soulseek_command_stays(self):
+        self.assertTrue(callable(getattr(d, "cmd_soulseek", None)))
+        self.assertIn("soulseek_bin", d.DEFAULTS)
+        self.assertIn("soulseek", open(os.path.join(os.path.dirname(d.__file__), "README.md"), encoding="utf-8").read().lower())
+
+    def test_johns_name_stays(self):
+        lic = open(os.path.join(os.path.dirname(d.__file__), "LICENSE"), encoding="utf-8").read()
+        self.assertIn("John Shah", lic)
+
+
 if __name__ == "__main__":
     unittest.main()

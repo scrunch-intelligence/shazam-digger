@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/scrunch-recordings-logo.png" alt="Scrunch Recordings" width="130">
+</p>
+
 # Shazam Digger
 
 You Shazam a lot of songs in clubs, on the radio and in DJ sets. Most of them you never look at again.

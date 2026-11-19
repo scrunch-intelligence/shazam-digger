@@ -1,0 +1,10 @@
+# One track per line: Artist - Title. A track listed twice counts as two Shazams.
+# Only songs Shazamed 2 or more times reach the picks page (min_tags in config.toml).
+Daft Punk - One More Time
+Fatboy Slim - Praise You
+Daft Punk - One More Time
+Cassius - Toop Toop
+Modjo - Lady (Hear Me Tonight)
+Fatboy Slim - Praise You
+Modjo - Lady (Hear Me Tonight)
+Daft Punk - One More Time

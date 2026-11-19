@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shazam Picks</title>
+<style>
+/* One column, big buttons, fixed player deck at the bottom for one-thumb use. Light and dark follow the system. */
+:root{
+  --bg:#f6f7f8; --panel:#ffffff; --fg:#14181a; --mute:#5d6b70; --line:#d9e0e2;
+  --cue:#0a8f99; --keep:#0a8f99; --drop:#b5482a; --deck:#ffffff; --s1:#dda03a; --s2:#d06a2a; --s3:#b5482a;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1214;--panel:#0f1a1d;--fg:#f2f6f7;--mute:#9fb3b8;--line:#1f3a40;--cue:#1ae8f2;--keep:#1ae8f2;--deck:#081012}}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font:15px/1.4 var(--body);padding:20px 16px 230px;max-width:760px;margin:0 auto}
+h1{font:700 22px/1.1 var(--body);margin:0}
+.lede{color:var(--mute);margin:10px 0 0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0 4px}
+.tally{font:500 13px var(--mono);color:var(--mute);margin-right:auto}.tally b{color:var(--cue)}
+.top{display:flex;align-items:center;gap:12px;position:relative}
+.gear{margin-left:auto;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--cue);background:transparent;color:var(--cue);font-size:20px;line-height:1;cursor:pointer;flex:none}
+.dd{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:250px;max-width:min(330px,92vw);background:var(--panel);border:1.5px solid var(--cue);border-radius:8px;padding:6px 0;box-shadow:0 8px 24px #0006}
+.dd[hidden]{display:none!important}
+.dd p{margin:0;padding:9px 14px;font-size:13px;color:var(--mute);border-bottom:1px solid var(--line)}
+.dd button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--fg);padding:12px 14px;font:600 14px var(--body);cursor:pointer}
+.dd button:last-child{border-bottom:0;color:var(--drop)}
+.tool{border:1.5px solid var(--line);background:transparent;color:var(--fg);border-radius:6px;padding:7px 10px;font:600 13px var(--body);cursor:pointer}
+h2{font:700 12px var(--body);text-transform:uppercase;letter-spacing:.1em;color:var(--cue);margin:24px 0 8px}
+.row{display:grid;grid-template-columns:44px 1fr;gap:4px 12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.row.on{border-color:var(--cue);box-shadow:0 0 0 1px var(--cue)}
+.row.keep{border-left:4px solid var(--keep)}.row.drop{opacity:.5}.row.have{border-left:4px solid var(--s1)}.row.have .info{opacity:.6}
+.play{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--cue);background:transparent;color:var(--cue);font-size:15px;cursor:pointer}
+.play:disabled{border-color:var(--line);color:var(--mute);cursor:default}
+.info{min-width:0}.ti{font-weight:600;overflow-wrap:anywhere}.ar{color:var(--mute);overflow-wrap:anywhere}
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px;font:12px var(--mono);color:var(--mute)}
+.bars{display:inline-flex;gap:2px;align-items:flex-end;height:14px}.bars i{width:4px;background:var(--line);border-radius:1px}
+.bars i.lit:nth-child(-n+2){background:var(--s1)}.bars i.lit:nth-child(3),.bars i.lit:nth-child(4){background:var(--s2)}.bars i.lit:nth-child(5){background:var(--s3)}
+.btns{grid-column:2;display:flex;gap:8px;margin-top:6px}
+.b{flex:1;border:1.5px solid var(--line);background:transparent;color:var(--fg);border-radius:6px;padding:9px;font:600 14px var(--body);cursor:pointer;text-align:center;text-decoration:none}
+.b.yt{flex:0 0 auto;padding-inline:14px;border-color:var(--cue)}
+.keep .bk{background:var(--keep);border-color:var(--keep);color:#062024}.drop .bd{background:var(--drop);border-color:var(--drop);color:#fff}
+.vid{grid-column:1/-1;aspect-ratio:16/9;width:100%;border:0;border-radius:6px;margin-top:6px}
+.deck{position:fixed;left:0;right:0;bottom:0;background:var(--deck);border-top:1.5px solid var(--cue);padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+.deck .in{max-width:760px;margin:0 auto;display:grid;gap:10px}
+.now{font:600 14px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seek{padding:8px 0;cursor:pointer;touch-action:none}.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.prog i{display:block;height:100%;width:0;background:var(--cue)}
+.big{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.big button{border-radius:8px;padding:15px 0;font:700 17px var(--body);cursor:pointer}
+.big .k{background:var(--keep);border:0;color:#062024}.big .d{background:var(--drop);border:0;color:#fff}.big .p{background:transparent;border:1.5px solid var(--cue);color:var(--fg)}
+details.done{margin-top:24px}details.done summary{font:600 13px var(--body);color:var(--mute);cursor:pointer;padding:10px 0}
+.menu{grid-column:2;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.menu a,.menu button{border:1.5px solid var(--line);background:transparent;color:var(--fg);border-radius:6px;padding:11px 6px;font:600 13px var(--body);cursor:pointer;text-align:center;text-decoration:none}
+.chip{border:1px solid var(--cue);color:var(--cue);border-radius:4px;padding:0 5px}.chip.old{border-color:var(--s1);color:var(--s1);font-weight:600}.chip.rel{border-color:var(--line);color:var(--mute)}
+.menu button.hvm.on{border-color:var(--s1);background:var(--s1);color:#1a1205}
+/* Clear heard: a small button beside Start's row; a big confirm sheet; Undo afterwards */
+.deckrow{display:flex;gap:10px;align-items:stretch}.deckrow .big{flex:1}
+.bx{flex:0 0 auto;width:64px;border-radius:8px;border:1px dashed var(--drop);background:transparent;color:var(--drop);font:600 11px/1.1 var(--body);cursor:pointer;padding:4px 2px}
+.sheet[hidden],.toast[hidden]{display:none!important}
+.sheet{position:fixed;inset:0;background:#000b;display:flex;align-items:flex-end;z-index:50}
+.sheet .pan{width:100%;max-width:760px;margin:0 auto;background:var(--panel);border-top:2px solid var(--drop);border-radius:14px 14px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto}
+.sheet h3{font:700 19px var(--body);margin:0 0 4px}.sheet p{color:var(--mute);margin:0 0 12px;font-size:14px}
+.sheet ul{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:6px}
+.sheet li{padding:10px 12px;border-radius:8px;border:1px solid var(--line);overflow-wrap:anywhere}
+.sheet li.drp:before{content:"✕  ";color:var(--drop);font-weight:700}.sheet li.stay{border-color:var(--cue);color:var(--cue)}
+.sheet .acts{display:grid;grid-template-columns:1fr 1.4fr;gap:12px}
+.sheet .acts button{border-radius:10px;padding:18px 0;font:700 17px var(--body);cursor:pointer}
+.sheet .cx{background:transparent;border:2px solid var(--cue);color:var(--fg)}.sheet .go{background:var(--drop);border:0;color:#fff}.sheet .go:disabled{opacity:.4}
+.sheet .un{width:100%;margin-top:12px;border-radius:10px;padding:14px 0;font:700 15px var(--body);background:transparent;border:2px solid var(--s1);color:var(--fg);cursor:pointer}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--deckh,230px) + 10px);max-width:728px;margin:0 auto;background:var(--panel);border:2px solid var(--s1);border-radius:10px;padding:10px 12px;display:flex;gap:12px;align-items:center;z-index:40}
+.toast span{flex:1;font:600 14px var(--body)}.toast button{border-radius:8px;padding:14px 20px;font:700 16px var(--body);background:var(--s1);border:0;color:#1a1205;cursor:pointer}
+/* Can't play here: collapsed at the very end, big targets, Copy all as plain text */
+details.nf{margin-top:30px;border:1.5px solid var(--line);border-radius:8px;background:var(--panel)}
+details.nf[hidden]{display:none}
+details.nf>summary{cursor:pointer;min-height:52px;display:flex;align-items:center;padding:10px 14px;font:700 15px var(--body)}
+.nfbody{padding:0 14px 16px;display:grid;gap:10px}
+.nfcopy{width:100%;min-height:52px;border-radius:8px;border:0;background:var(--s1);color:#1a1205;font:700 16px var(--body);cursor:pointer}
+.nfcopy.ok{background:var(--cue);color:#062024}
+.nftext{width:100%;min-height:160px;background:var(--bg);color:var(--fg);border:1.5px solid var(--s1);border-radius:6px;font:13px/1.4 var(--mono);padding:8px}
+.nfi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;min-width:0}
+.nfi .t{min-width:0;overflow-wrap:anywhere}.nfi a{flex:0 0 auto;padding:10px 12px;border:1.5px solid var(--cue);border-radius:6px;color:var(--fg);text-decoration:none;font:600 13px var(--body)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--cue);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="top"><h1>Shazam Picks</h1><button class="gear" id="gear" aria-label="Help and export" aria-expanded="false" aria-haspopup="true">&#9881;</button>
+  <nav class="dd" id="dd" hidden aria-label="Help and export">
+    <p>Keep or Drop: the next preview plays by itself. Your picks are saved in this browser.</p>
+    <p>More has your link templates, I have it and copy. I have it means you own the track: it counts as a Keep for your taste and never goes on a buy list.</p>
+    <p>Clear heard drops every track you played but did not keep, with Undo.</p>
+    <button id="exTxt">Export keeps (.txt)</button><button id="exCsv">Export keeps (.csv)</button><button id="exPicks">Export picks (.csv)</button><button id="reset">Clear picks</button>
+  </nav></div>
+<div class="bar"><div class="tally" id="tally"></div></div>
+<div id="list"></div>
+<details class="nf" id="nf" hidden><summary id="nfs">Can't play here</summary><div class="nfbody">
+  <button class="nfcopy" id="nfc">Copy all</button>
+  <textarea class="nftext" id="nft" readonly hidden aria-label="The whole list as plain text"></textarea>
+  <div id="nfl"></div>
+</div></details>
+
+<div class="deck"><div class="in">
+  <div class="now" id="nowt">Nothing playing yet</div>
+  <div class="seek" id="seek" role="slider" aria-label="Scrub through the clip" tabindex="0"><div class="prog"><i id="prog"></i></div></div>
+  <div class="deckrow"><div class="big"><button class="d" id="bd">Drop</button><button class="p" id="bstart">Start</button><button class="k" id="bk">Keep</button></div>
+  <button class="bx" id="bx" aria-label="Drop the tracks you listened to and did not keep">Clear<br>heard</button></div>
+</div></div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sht"><div class="pan">
+  <h3 id="sht"></h3><p id="shp"></p><ul id="shl"></ul>
+  <div class="acts"><button class="cx" id="shc">Cancel</button><button class="go" id="shg"></button></div>
+  <button class="un" id="shu" hidden></button>
+</div></div>
+<div class="toast" id="toast" hidden role="status"><span id="toastt"></span><button id="toastu">Undo</button></div>
+<audio id="au" preload="none"></audio>
+
+<script>
+const T=__DATA__;
+const CANT=__CANT__;
+const KEY='shazam-picks:'+location.pathname;
+const $=id=>document.getElementById(id), au=$('au');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let picks={};try{picks=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(picks))}catch(e){}};
+const SECTIONS=[["Love it · 4+ tags",t=>t.score>=4],["Really like · 3 tags",t=>t.score==3],["Like · 2 tags",t=>t.score==2],["Tagged once",t=>t.score<=1]];
+let cur=-1, vidOpen=-1, menuOpen=-1;
+const ytId=u=>(String(u).match(/[?&]v=([\w-]{11})/)||[])[1];
+const ytStart=u=>(String(u).match(/[?&]t=(\d+)/)||[])[1]||0;
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// A release date on every card; anything released more than 8 weeks ago also gets an "older release" chip.
+function relInfo(t){
+  if(t.rel){const d=new Date(t.rel+'T00:00:00');if(!isNaN(d))return{text:'Released '+d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear(),old:(Date.now()-d)/864e5>56}}
+  if(/^\d{4}$/.test(t.yt_year||''))return{text:'Year '+t.yt_year+' (from video)',old:+t.yt_year<new Date().getFullYear()};
+  return{text:'Release date unknown',old:false}}
+function order(){const o=[];SECTIONS.forEach(([,f])=>T.forEach((t,i)=>{if(f(t)&&!picks[t.id])o.push(i)}));return o}
+function row(i){const t=T[i],p=picks[t.id]||'';
+  const bars='<span class="bars" title="tags">'+[1,2,3,4,5].map(n=>`<i class="${n<=t.score?'lit':''}" style="height:${4+n*2}px"></i>`).join('')+'</span>';
+  const yt=t.yt?`<a class="b yt" href="${esc(t.yt)}" target="_blank" rel="noopener">YouTube${t.yt_year?' '+esc(t.yt_year):''}</a>`:(t.checked?'':`<a class="b yt" href="${esc(t.search)}" target="_blank" rel="noopener">Search</a>`);
+  const rl=relInfo(t);
+  const embed=(vidOpen==i&&ytId(t.yt))?`<iframe class="vid" src="https://www.youtube-nocookie.com/embed/${ytId(t.yt)}?autoplay=1&start=${ytStart(t.yt)}" allow="autoplay;encrypted-media" allowfullscreen></iframe>`:'';
+  return `<div class="row ${p} ${i==cur?'on':''}" id="r${i}"><button class="play" data-play="${i}" aria-label="Play" ${t.audio||ytId(t.yt)?'':'disabled'}>${i==cur&&!au.paused?'❚❚':'▶'}</button>
+  <div class="info"><div class="ti">${esc(t.title)}</div><div class="ar">${esc(t.artist)}</div>
+  <div class="meta">${bars}${t.score} tag${t.score==1?'':'s'}${t.when?' · '+esc(t.when):''}${p=='have'?' <span class="chip old">&#10003; I have it</span>':''}${t.liked?' <span class="chip">artist you kept</span>':''}<span class="chip rel">${esc(rl.text)}</span>${rl.old?'<span class="chip old">older release</span>':''}${t.also&&t.also.length?' · also read as '+esc(t.also.join(', ')):''}${t.audio?'':' · no preview'}</div></div>
+  <div class="btns"><button class="b bd" data-pick="drop" data-i="${i}">Drop</button>${yt}<button class="b yt" data-more="${i}" aria-expanded="${menuOpen==i}">More</button><button class="b bk" data-pick="keep" data-i="${i}">Keep</button></div>${menuOpen==i?menu(t,i):''}${embed}</div>`}
+// More menu: links to look the track up yourself, in your own browser
+function menu(t,i){const a=(u,l)=>u?`<a href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`:'',h=picks[t.id]=='have';
+  return `<div class="menu">${a(t.store,'Store')}${a(t.pool,'Record pool')}<button data-copy="${i}">Copy artist – title</button><button class="hvm${h?' on':''}" data-pick="have" data-i="${i}" aria-pressed="${h}" aria-label="I already have ${esc(t.artist)} – ${esc(t.title)}">${h?'&#10003; I have it (tap to undo)':'I have it'}</button></div>`}
+function render(){const done=T.map((t,i)=>i).filter(i=>picks[T[i].id]);let h='';
+  SECTIONS.forEach(([name,f])=>{const ids=T.map((t,i)=>i).filter(i=>f(T[i])&&!picks[T[i].id]);if(ids.length)h+=`<h2>${name}</h2>`+ids.map(row).join('')});
+  if(!h)h='<p class="lede">All decided.</p>';
+  if(done.length)h+=`<details class="done"><summary>Decided (${done.length})</summary>${done.map(row).join('')}</details>`;
+  $('list').innerHTML=h;const k=T.filter(t=>picks[t.id]=='keep').length,d=T.filter(t=>picks[t.id]=='drop').length,hv=T.filter(t=>picks[t.id]=='have').length;
+  $('tally').innerHTML=`<b>${T.length-k-d-hv}</b> to go · <b>${k}</b> keep · <b>${d}</b> drop`+(hv?` · <b>${hv}</b> have`:'');
+  $('bstart').textContent=cur<0?'Start':(au.paused?'Play':'Pause');$('nowt').textContent=cur<0?'Nothing playing yet':`${T[cur].artist} – ${T[cur].title}`}
+function play(i){cur=i;const t=T[i];heardAdd(t.id);
+  if(t.audio){vidOpen=-1;au.src=t.audio;au.play().catch(()=>{})}else{au.pause();au.removeAttribute('src');vidOpen=ytId(t.yt)?i:-1}
+  render();const r=$('r'+i);if(r)r.scrollIntoView({block:'center',behavior:'smooth'})}
+function next(){const o=order();if(o.length)play(o[0]);else{cur=-1;au.pause();render()}}
+function pick(i,p){const t=T[i];picks[t.id]==p?delete picks[t.id]:picks[t.id]=p;store();
+  if(p=='have'&&picks[t.id]=='have'){menuOpen=-1;showToast('I have it: '+t.artist+' – '+t.title,()=>{if(picks[t.id]=='have'){delete picks[t.id];store();hideToast();render()}})}
+  if(i==cur||cur<0)next();else render()}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.play!=null){const i=+b.dataset.play;if(i==cur&&T[i].audio){au.paused?au.play():au.pause();render()}else play(i)}
+  else if(b.dataset.pick)pick(+b.dataset.i,b.dataset.pick)
+  else if(b.dataset.more!=null){const i=+b.dataset.more;menuOpen=menuOpen==i?-1:i;render()}
+  else if(b.dataset.copy!=null){const t=T[+b.dataset.copy];navigator.clipboard?.writeText(`${t.artist} - ${t.title}`).then(()=>{b.textContent='Copied'},()=>{})}});
+$('bstart').onclick=()=>{if(cur<0)return next();if(T[cur].audio){au.paused?au.play():au.pause()}render()};
+$('bk').onclick=()=>cur>=0?pick(cur,'keep'):next();$('bd').onclick=()=>cur>=0?pick(cur,'drop'):next();
+au.onended=next;au.onplay=au.onpause=render;au.ontimeupdate=()=>{$('prog').style.width=(au.duration?au.currentTime/au.duration*100:0)+'%'};
+$('seek').onpointerdown=e=>{if(!au.duration)return;const r=$('seek').getBoundingClientRect();au.currentTime=au.duration*Math.min(1,Math.max(0,(e.clientX-r.left)/r.width))};
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+const keeps=()=>T.filter(t=>picks[t.id]=='keep');
+const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+$('exTxt').onclick=()=>download('keeps.txt',keeps().map(t=>`${t.artist} - ${t.title}`).join('\n')+'\n','text/plain');
+$('exCsv').onclick=()=>download('keeps.csv','Artist,Title,Tags,YouTube\n'+keeps().map(t=>[t.artist,t.title,t.score,t.yt].map(q).join(',')).join('\n')+'\n','text/csv');
+$('exPicks').onclick=()=>download('picks.csv','Artist,Title,Pick\n'+T.filter(t=>picks[t.id]).map(t=>[t.artist,t.title,picks[t.id]].map(q).join(',')).join('\n')+'\n','text/csv');  // Keeps and Drops, for: python digger.py learn picks.csv
+$('reset').onclick=()=>{if(confirm('Clear all Keep/Drop picks on this page?')){picks={};store();cur=-1;render()}};
+// Clear heard: every track played this session that you did not keep gets Drop in one go. Kept ones are listed and never touched.
+const HKEY='shazam-heard:'+location.pathname;
+let heard={at:0,ids:[]},lastBatch=null,toastTimer=null;
+try{const h=JSON.parse(localStorage.getItem(HKEY)||'{}');heard=h.heard||heard;lastBatch=h.lastBatch||null}catch(e){}
+if(!Array.isArray(heard.ids)||Date.now()-(heard.at||0)>8*3600e3)heard={at:Date.now(),ids:[]};  // a new session after 8 hours away
+const saveHeard=()=>{try{localStorage.setItem(HKEY,JSON.stringify({heard,lastBatch}))}catch(e){}};
+function heardAdd(id){heard.ids=heard.ids.filter(x=>x!=id);heard.ids.push(id);heard.ids=heard.ids.slice(-12);heard.at=Date.now();saveHeard()}
+function batchList(){const ids=new Set(T.map(t=>t.id)),go=[],stay=[];
+  heard.ids.forEach(id=>{if(!ids.has(id))return;if(picks[id]=='keep'||picks[id]=='have')stay.push(id);else if(!picks[id])go.push(id)});return{go,stay}}
+const nameOf=id=>{const t=T.find(x=>x.id==id);return t?t.artist+' – '+t.title:id};
+const li=(cls,text)=>{const e=document.createElement('li');e.className=cls;e.textContent=text;return e};
+function openSheet(){const {go,stay}=batchList(),n=go.length,s=n==1?'':'s';$('shl').replaceChildren();
+  $('sht').textContent=n?`Drop ${n} track${s} you listened to?`:'Nothing to drop';
+  $('shp').textContent=n?'Each one gets Drop, the same as pressing Drop on it.'+(stay.length?' Tracks you kept or have stay.':''):'Every track you played this session is already kept or decided.';
+  go.forEach(id=>$('shl').append(li('drp',nameOf(id)+(cur>=0&&T[cur].id==id?' (playing now)':''))));
+  stay.forEach(id=>$('shl').append(li('stay',(picks[id]=='have'?'I have it, stays: ':'Kept, stays: ')+nameOf(id))));
+  $('shg').textContent=n?`Drop ${n} track${s}`:'Nothing to drop';$('shg').disabled=!n;
+  const u=$('shu');u.hidden=!(lastBatch&&lastBatch.ids&&lastBatch.ids.length);if(!u.hidden)u.textContent=`↩ Undo the last batch (${lastBatch.ids.length})`;
+  $('sheet').hidden=false;$('shc').focus()}
+const closeSheet=()=>{$('sheet').hidden=true};
+function batchDrop(){const {go}=batchList();if(!go.length)return closeSheet();
+  go.forEach(id=>{if(!picks[id])picks[id]='drop'});store();
+  lastBatch={ids:go,heard:heard.ids.slice()};heard={at:Date.now(),ids:[]};saveHeard();closeSheet();
+  if(cur>=0&&go.includes(T[cur].id)){if(!au.paused)next();else{cur=-1;au.pause();au.removeAttribute('src')}}
+  showToast(`${go.length} track${go.length==1?'':'s'} dropped`,undoBatch);render()}
+function undoBatch(){if(!lastBatch)return;lastBatch.ids.forEach(id=>{if(picks[id]=='drop')delete picks[id]});store();
+  heard={at:Date.now(),ids:(lastBatch.heard||[]).slice(-12)};lastBatch=null;saveHeard();hideToast();closeSheet();render()}
+let toastFn=null;
+function showToast(text,fn){$('toastt').textContent=text;toastFn=fn;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,60000)}
+const hideToast=()=>{$('toast').hidden=true};
+$('bx').onclick=openSheet;$('shc').onclick=closeSheet;$('shg').onclick=batchDrop;$('shu').onclick=undoBatch;$('toastu').onclick=()=>{if(toastFn)toastFn()};
+$('sheet').onclick=e=>{if(e.target.id=='sheet')closeSheet()};
+document.addEventListener('keydown',e=>{if(e.key=='Escape'&&!$('sheet').hidden)closeSheet()});
+try{const dk=document.querySelector('.deck');new ResizeObserver(()=>document.documentElement.style.setProperty('--deckh',dk.offsetHeight+'px')).observe(dk)}catch(e){}
+// Gear: the only place with help text and the export buttons
+(function(){const g=$('gear'),d=$('dd');const close=()=>{d.hidden=true;g.setAttribute('aria-expanded','false')};
+  g.onclick=e=>{e.stopPropagation();d.hidden=!d.hidden;g.setAttribute('aria-expanded',String(!d.hidden))};
+  document.addEventListener('click',e=>{if(!d.hidden&&!d.contains(e.target))close()});document.addEventListener('keydown',e=>{if(e.key=='Escape')close()})})();
+// Can't play here: tracks that were looked up and have no preview and no checked video. Copy all gives plain text.
+(function(){const items=Array.isArray(CANT)?CANT:[];if(!items.length)return;
+  $('nf').hidden=false;$('nfs').textContent="Can't play here ("+items.length+")";
+  const text=items.map(e=>e.artist+' - '+e.title).join('\n');const host=$('nfl');
+  items.forEach(e=>{const c=document.createElement('div');c.className='nfi';const x=document.createElement('div');x.className='t';x.textContent=e.artist+' – '+e.title;
+    const a=document.createElement('a');a.href=e.search;a.target='_blank';a.rel='noopener';a.textContent='Search';c.append(x,a);host.append(c)});
+  const b=$('nfc'),ta=$('nft');
+  const done=()=>{b.textContent='Copied';b.classList.add('ok');setTimeout(()=>{b.textContent='Copy all';b.classList.remove('ok')},3000)};
+  const manual=()=>{ta.value=text;ta.hidden=false;ta.focus();ta.select();try{if(document.execCommand('copy')){done();return}}catch(e){}b.textContent='Select the text below and copy it'};
+  b.onclick=()=>{try{navigator.clipboard.writeText(text).then(done,manual)}catch(e){manual()}}})();
+render();
+</script>
+</body>
+</html>

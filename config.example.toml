@@ -1,0 +1,23 @@
+# Copy this file to config.toml and change what you need. Every line is optional.
+# Paths are relative to this folder unless they start with / or ~.
+
+data_dir = "data"          # where tracks.json, shazams.json and screenshots are kept
+out_dir = "out"            # where the picks page (picks.html) is written
+
+network = true             # look up checked YouTube links, 30 s previews and release dates (no API keys needed)
+youtube_check = true       # open each YouTube hit with yt-dlp to confirm it plays (slower, fewer wrong links)
+
+# Android only
+adb = ""                   # path to adb; empty = find it on PATH or in the Android SDK
+adb_serial = ""            # empty = first connected phone; run `adb devices` to see serials
+screenshot_folders = ["/sdcard/Pictures/Screenshots", "/sdcard/DCIM/Screenshots"]
+
+min_tags = 2               # only songs you Shazamed at least this many times reach the page (1 = all)
+
+# Your own search links (picks page "More" menu and find-tracks buy list). Use {q} where the song goes.
+# Leave empty to show no link. The tool never fetches these pages; you open them in your own browser.
+store_search = ""          # your music store's search address with {q}, e.g. "https://store.example/search?q={q}"
+pool_search = ""           # your record pool's search address with {q} for the song, e.g. "https://pool.example/search?q={q}"
+
+# Screenshots feature only (macOS)
+ffmpeg = ""                # path to ffmpeg; empty = find it on PATH

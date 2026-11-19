@@ -265,6 +265,20 @@ class SoundTaste(unittest.TestCase):
         self.assertIsNone(sound.build(keeps[:2], drops))
         self.assertGreater(sound.check(keeps, drops), 0.9)
 
+    def test_soulseek_hands_the_list_to_sockseek(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = os.path.join(tmp, "sockseek"); open(exe, "w").close()
+            keeps = os.path.join(tmp, "keeps.txt"); open(keeps, "w").write("Modjo - Lady\n")
+            old = dict(d.CFG); d.CFG.update(soulseek_bin=exe, soulseek_dir=os.path.join(tmp, "dl"), soulseek_conf="")
+            try:
+                calls = []
+                d.cmd_soulseek(keeps, look=True, run=calls.append)
+            finally:
+                d.CFG.clear(); d.CFG.update(old)
+            self.assertEqual(calls[0][0], exe)
+            self.assertIn("--print", calls[0])
+            self.assertIn("Modjo,Lady", open(calls[0][1]).read())
+
 
 class YouTubeLinks(unittest.TestCase):
     """A link is kept only when it is the same release. No network: yt-dlp answers are stood in for."""

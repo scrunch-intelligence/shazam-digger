@@ -75,6 +75,7 @@ Shazams. See `sample/shazams.txt`.
 
     .venv/bin/python digger.py list sample/shazams.txt     # any phone: your list
     .venv/bin/python digger.py android                     # Android over USB
+    .venv/bin/python digger.py soulseek keeps.txt          # find and download your keeps on Soulseek (--look = search only)
     .venv/bin/python digger.py find-tracks keeps.txt       # buy list: out/buy-list.html
     .venv/bin/python digger.py page                        # rebuild the page; looks up any missing checked YouTube links first
     .venv/bin/python digger.py learn picks.csv             # learn your taste from your Keeps, Drops and I have it
@@ -116,6 +117,20 @@ After that, `learn` turns each 30 s preview into a sound fingerprint. For any tr
 preview, and it prints an honest check like the one above. Treat it as promising, not proven: with few
 decisions it is close to a coin toss. The code is small
 (`sound.py`, `sound_fp.py`) so you can improve it.
+
+Ideas for a better taste algorithm (BPM, key, better sound models) are welcome as issues or pull requests. Keep it small, keep
+it on the user's own computer, and keep the human-pace rule.
+
+## Soulseek (optional)
+
+Many records, old vinyl-only ones above all, are in no store. `soulseek` hands your list to
+[Sockseek](https://github.com/fiso64/sockseek), an open source Soulseek downloader. Download it from its releases
+page, put your Soulseek username and password in its `sockseek.conf`, and set `soulseek_bin` in `config.toml`.
+
+    .venv/bin/python digger.py soulseek keeps.txt --look   # only show what is on Soulseek
+    .venv/bin/python digger.py soulseek keeps.txt          # download the best copy of each
+
+What you download is your own responsibility. Share back what you can; that is how Soulseek works.
 
 Ideas for a better taste algorithm (BPM, key, better sound models) are welcome as issues or pull requests. Keep it small, keep
 it on the user's own computer, and keep the human-pace rule.

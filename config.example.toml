@@ -21,3 +21,8 @@ pool_search = ""           # your record pool's search address with {q} for the 
 
 # Screenshots feature only (macOS)
 ffmpeg = ""                # path to ffmpeg; empty = find it on PATH
+
+# Soulseek (optional). Install Sockseek yourself from github.com/fiso64/sockseek/releases, then: digger.py soulseek keeps.txt
+soulseek_bin = ""          # path to the sockseek program
+soulseek_conf = ""         # path to your sockseek.conf (username = ..., password = ...); empty = Sockseek's default place
+soulseek_dir = "soulseek"  # where the downloads go

@@ -39,6 +39,9 @@ DEFAULTS = {
     "min_tags": 2,                 # only songs you Shazamed at least this many times reach the page (1 = all of them)
     "store_search": "",            # your music store's search address with {q} for the song, e.g. "https://store.example/search?q={q}"
     "pool_search": "",             # your record pool's search address with {q} for the song, e.g. "https://pool.example/search?q={q}"
+    "soulseek_bin": "",            # path to the Sockseek program (github.com/fiso64/sockseek) for the soulseek command
+    "soulseek_conf": "",           # path to your sockseek.conf (your Soulseek username and password); empty = Sockseek's own default
+    "soulseek_dir": "soulseek",    # where soulseek downloads go
 }
 
 # Honest about who is asking. The tool never pretends to be a browser and never tries to get past a robot check.
@@ -1109,6 +1112,31 @@ def cmd_learn(path, drops_file=None, library_file=None, network=False):
     finish(load(TRACKS, []), network)
 
 
+# ---------------------------------------------------------------- Soulseek (optional): find and download your keeps
+
+def cmd_soulseek(path, look=False, run=subprocess.run):
+    """Hand your keeps to Sockseek (github.com/fiso64/sockseek), an open source Soulseek downloader you install
+    yourself. It searches Soulseek for each 'Artist - Title' and downloads the best copy. --look only searches."""
+    exe = os.path.expanduser(CFG["soulseek_bin"]) or shutil.which("sockseek") or ""
+    if not exe or not os.path.exists(exe):
+        sys.exit("Set soulseek_bin in config.toml to your Sockseek program (get it from github.com/fiso64/sockseek/releases).")
+    rows = parse_list(open(path, encoding="utf-8-sig").read()) if os.path.exists(path) else parse_list(path)
+    if not rows:
+        sys.exit("No 'Artist - Title' lines found.")
+    out = os.path.join(HERE, os.path.expanduser(CFG["soulseek_dir"]))
+    os.makedirs(out, exist_ok=True)
+    lst = os.path.join(out, "wanted.csv")
+    with open(lst, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f); w.writerow(["Artist", "Title"]); w.writerows([r["artist"], r["title"]] for r in rows)
+    cmd = [exe, lst, "-o", out, "--name-format", "{artist} - {title}", "--concurrent-jobs", "2"]
+    if CFG["soulseek_conf"]:
+        cmd += ["--config", os.path.expanduser(CFG["soulseek_conf"])]
+    if look:
+        cmd += ["--print", "results"]
+    print(f"{len(rows)} tracks -> {'search only' if look else out}")
+    return run(cmd)
+
+
 # ---------------------------------------------------------------- Rekordbox: a playlist of the keeps you have bought
 
 AUDIO = (".mp3", ".wav", ".aiff", ".aif", ".flac", ".m4a", ".aac", ".ogg")
@@ -1162,7 +1190,7 @@ def cmd_rekordbox(folder, keeps):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Turn your Shazams into a Keep/Drop picks page.")
-    ap.add_argument("command", choices=["list", "android", "page", "clear-phone", "find-tracks", "learn", "rekordbox-xml"])
+    ap.add_argument("command", choices=["list", "android", "page", "clear-phone", "find-tracks", "learn", "soulseek", "rekordbox-xml"])
     ap.add_argument("file", nargs="?", help="list / find-tracks / learn: a .txt or .csv of 'Artist - Title' lines; rekordbox-xml: your music folder")
     ap.add_argument("keeps", nargs="?", help="rekordbox-xml: your keeps.txt or keeps.csv")
     ap.add_argument("--drops", help="learn: an extra list of tracks you dropped")
@@ -1171,6 +1199,7 @@ def main(argv=None):
     ap.add_argument("--yes", action="store_true", help="clear-phone: really delete (default is a dry run)")
     ap.add_argument("--dry-run", action="store_true", help="clear-phone: only show what would be deleted (the default)")
     ap.add_argument("--rehearse", action="store_true", help="clear-phone dry run: open the delete box for one Shazam, then press Cancel")
+    ap.add_argument("--look", action="store_true", help="soulseek: only search and show what is there, download nothing")
     ap.add_argument("--no-network", action="store_true", help="skip YouTube and preview lookups")
     ap.add_argument("--screenshots", action="store_true", help="android: also identify songs from YouTube player screenshots (macOS)")
     a = ap.parse_args(argv)
@@ -1191,6 +1220,10 @@ def main(argv=None):
         if not a.file:
             ap.error("learn needs your keeps file, e.g. python digger.py learn keeps.txt")
         cmd_learn(a.file, a.drops, a.library, network)
+    elif a.command == "soulseek":
+        if not a.file:
+            ap.error("soulseek needs your keeps file or one 'Artist - Title', e.g. python digger.py soulseek keeps.txt")
+        cmd_soulseek(a.file, a.look)
     elif a.command == "rekordbox-xml":
         if not (a.file and a.keeps):
             ap.error("rekordbox-xml needs a music folder and your keeps file, e.g. python digger.py rekordbox-xml ~/Music/Bought keeps.txt")
